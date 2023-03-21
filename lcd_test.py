@@ -1,21 +1,24 @@
-import I2C_LCD_driver
+# Import necessary libraries for communication and display use
+import drivers
 from time import sleep
 
-# Initialize the I2C LCD
-lcd = I2C_LCD_driver.lcd()
+# Load the driver and set it to "display"
+# If you use something from the driver library use the "display." prefix first
+lcd = drivers.Lcd()
 
+# Main body of code
 try:
-    # Clear the display
-    lcd.lcd_clear()
-
-    # Display text on the LCD
-    lcd.lcd_display_string("Hello, World!", 1)
-    lcd.lcd_display_string("Raspberry Pi Test", 2)
-
-    # Keep the text displayed until the script is interrupted
     while True:
-        sleep(1)
-
+        # Remember that your sentences can only be 16 characters long!
+        print("Writing to display")
+        lcd.lcd_display_string("Greetings Human!", 1)  # Write line of text to first line of display
+        lcd.lcd_display_string("Demo Pi Guy code", 2)  # Write line of text to second line of display
+        sleep(2)                                           # Give time for the message to be read
+        lcd.lcd_display_string("I am a display!", 1)   # Refresh the first line of display with a different message
+        sleep(2)                                           # Give time for the message to be read
+        lcd.lcd_clear()                                # Clear the display of any data
+        sleep(2)                                           # Give time for the message to be read
 except KeyboardInterrupt:
-    # Clear the display and exit
+    # If there is a KeyboardInterrupt (when you press ctrl+c), exit the program and cleanup
+    print("Cleaning up!")
     lcd.lcd_clear()
