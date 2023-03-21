@@ -1,79 +1,89 @@
 import os
 import json
-import time
-import datetime
+from datetime import datetime
 from gpiozero import Button
-from drivers import Lcd, CustomCharacters
 from picamera import PiCamera
-from face_recognition import load_image_file, face_encodings, compare_faces
+from time import sleep
+import face_recognition
+import cv2
+import numpy as np
+from drivers import Lcd, CustomCharacters
 
-# Initialize camera, LCD, and buttons
+# Initialize camera and buttons
 camera = PiCamera()
-lcd = Lcd()
 enter_button = Button(17)
 exit_button = Button(27)
 
-# Initialize GSM module (SIM800L)
-# (Assuming you've already set up the GSM module with the Raspberry Pi)
+# Define tenants
+tenants = {
+    "tenant_1": {
+        "name": "John Doe",
+        "encoding": None,
+        "phone": "+1234567890"
+    },
+    # Add more tenants here
+}
 
-def take_photo():
-    camera.capture('photo.jpg')
+# Load face encodings for each tenant
+for tenant_id, tenant_data in tenants.items():
+    image = face_recognition.load_image_file(f"faces/{tenant_id}.jpg")
+    face_encoding = face_recognition.face_encodings(image)[0]
+    tenants[tenant_id]["encoding"] = face_encoding
 
-def recognize_face(known_encodings, known_names):
-    unknown_image = load_image_file('photo.jpg')
-    unknown_encoding = face_encodings(unknown_image)[0]
+def save_to_database(name, action):
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    record = {"name": name, "action": action, "timestamp": current_time}
 
-    results = compare_faces(known_encodings, unknown_encoding, tolerance=0.5)
-    name = "Unknown"
-    for index, is_match in enumerate(results):
-        if is_match:
-            name = known_names[index]
-            break
-
-    return name
-
-def update_database(name, action):
-    now = datetime.datetime.now()
-    timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
-    record = {'name': name, 'action': action, 'timestamp': timestamp}
-
-    if not os.path.exists('attendance.json'):
-        with open('attendance.json', 'w') as f:
-            json.dump([], f)
-
-    with open('attendance.json', 'r') as f:
-        data = json.load(f)
+    if os.path.exists("attendance.json"):
+        with open("attendance.json", "r") as f:
+            data = json.load(f)
+    else:
+        data = []
 
     data.append(record)
 
-    with open('attendance.json', 'w') as f:
+    with open("attendance.json", "w") as f:
         json.dump(data, f)
 
-def main():
-    # Load known faces and their encodings
-    known_encodings = []  # Load your known face encodings here
-    known_names = []  # Load your known face names here
+def recognize_face():
+    camera.capture("temp.jpg")
+    image = face_recognition.load_image_file("temp.jpg")
+    face_locations = face_recognition.face_locations(image)
 
-    while True:
-        if enter_button.is_pressed:
-            time.sleep(0.5)
-            take_photo()
-            name = recognize_face(known_encodings, known_names)
-            update_database(name, "Enter")
-            lcd.lcd_display_string(name, 1)
-            lcd.lcd_display_string("Recognized", 2)
-            time.sleep(2)
-            lcd.lcd_clear()
+    if len(face_locations) > 0:
+        face_encodings = face_recognition.face_encodings(image, face_locations)
+        face_enc = face_encodings[0]
 
-        if exit_button.is_pressed:
-            time.sleep(0.5)
-            take_photo()
-            name = recognize_face(known_encodings, known_names)
-            update_database(name, "Exit")
-            lcd.lcd_display_string(name, 1)
-            lcd.lcd_display_string("Recognized", 2)
-            time.sleep(2)
-            lcd.lcd_clear()
+        # Compare the face encoding with known tenants
+        for tenant_id, tenant_data in tenants.items():
+            match = face_recognition.compare_faces([tenant_data["encoding"]], face_enc, tolerance=0.5)
+            if match[0]:
+                return tenant_data["name"]
 
-if __name__ == '__main__':
-    main()
+    return None
+
+def on_button_press(action):
+    lcd.lcd_clear()
+    lcd.lcd_display_string("Recognizing...", 1)
+    name = recognize_face()
+
+    if name:
+        lcd.lcd_clear()
+        lcd.lcd_display_string(f"{name}", 1)
+        lcd.lcd_display_string(f"{action}", 2)
+        save_to_database(name, action)
+    else:
+        lcd.lcd_clear()
+        lcd.lcd_display_string("Unknown face", 1)
+
+# Initialize LCD
+lcd = Lcd()
+
+# Main loop
+while True:
+    if enter_button.is_pressed:
+        on_button_press("Entered")
+        sleep(1)
+    elif exit_button.is_pressed:
+        on_button_press("Exited")
+        sleep(1)
