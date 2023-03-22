@@ -51,6 +51,7 @@ def recognize_face(frame):
             first_match_index = matches.index(True)
             name = known_face_names[first_match_index]
 
+        lcd.lcd_clear()
         lcd.lcd_display_string(name, 1)
 
 def get_camera_feed():
