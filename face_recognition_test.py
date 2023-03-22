@@ -3,8 +3,12 @@ import face_recognition
 import os
 import time
 import drivers
+import numpy as np
+
+print("Initializing...")
 
 lcd = drivers.Lcd()
+print("LCD initialized")
 
 # Load known faces and their encodings
 known_faces = []
@@ -70,8 +74,6 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
     load_known_faces()
 
     image_files = [file for file in os.listdir(directory) if file.endswith((".jpg", ".png", ".jpeg"))]
-    cv2.namedWindow('Image Feed', cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty('Image Feed', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while True:
         for image_file in image_files:
