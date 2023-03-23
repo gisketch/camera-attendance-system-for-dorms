@@ -90,7 +90,7 @@ def log_event(name, action, parents_phone, email):
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     log_entry = {
         "timestamp": timestamp,
-        "name": name.upper(),
+        "name": name,
         "action": action,
         "parents_phone": parents_phone,
         "email": email
