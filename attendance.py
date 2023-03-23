@@ -17,7 +17,23 @@ known_faces = []
 known_face_encodings = []
 known_face_names = []
 
+def load_tenants_data():
+    tenants_data_file = 'tenants_data.json'
+
+    if not os.path.exists(tenants_data_file):
+        return {}
+
+    with open(tenants_data_file, 'r') as file:
+        data = json.load(file)
+
+    return data
+
+tenants_data = load_tenants_data()
+
 def load_known_faces():
+    
+    print("Loading known faces from database...")
+
     global known_faces, known_face_encodings, known_face_names
 
     # Set the folder containing the images of known faces
@@ -39,9 +55,15 @@ def load_known_faces():
             known_face_encodings.append(encoding)
             known_face_names.append(name)
 
-def log_event(name, action):
+def log_event(name, action, parents_phone, email):
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    log_entry = {"timestamp": timestamp, "name": name, "action": action}
+    log_entry = {
+        "timestamp": timestamp,
+        "name": name.upper(),
+        "action": action,
+        "parents_phone": parents_phone,
+        "email": email
+    }
 
     log_file = 'log.json'
     log_data = []
@@ -69,14 +91,18 @@ def recognize_face(frame, action):
         matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
         name = "Unknown"
 
-        if True in matches:
-            first_match_index = matches.index(True)
-            name = known_face_names[first_match_index]
-
-        print(name)
-        log_event(name, action)
+        tenant_data = tenants_data.get(name)
+        if tenant_data:
+            parents_phone = tenant_data["parents_phone"]
+            email = tenant_data["email"]
+            print(name)
+            log_event(name.upper(), action, parents_phone, email)
+        else:
+            print("Unknown")
+            log_event(name.upper(), action, "Unknown", "Unknown")
 
 def get_camera_feed():
+    print("starting camera feed...")
     load_known_faces()
     cap = cv2.VideoCapture(0)
 
@@ -94,6 +120,7 @@ def get_camera_feed():
     cv2.destroyAllWindows()
 
 def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
+    print("starting camera feed...")
     load_known_faces()
 
     image_files = [file for file in os.listdir(directory) if file.endswith((".jpg", ".png", ".jpeg"))]

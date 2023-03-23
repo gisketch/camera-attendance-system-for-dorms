@@ -27,22 +27,26 @@
 <body>
     <h1>Entry/Exit Log</h1>
     <table>
-        <thead>
-            <tr>
-                <th>Timestamp</th>
-                <th>Name</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for entry in log_data %}
-            <tr>
-                <td>{{ entry.timestamp }}</td>
-                <td>{{ entry.name }}</td>
-                <td>{{ entry.action }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>Name</th>
+            <th>Action</th>
+            <th>Parent's Phone Number</th>
+            <th>Email</th>
+        </tr>
+      </thead>
+      <tbody>
+          {% for entry in log_data %}
+          <tr>
+              <td>{{ entry.timestamp }}</td>
+              <td>{{ entry.name }}</td>
+              <td>{{ entry.action }}</td>
+              <td>{{ entry.parents_phone }}</td>
+              <td>{{ entry.email }}</td>
+          </tr>
+          {% endfor %}
+      </tbody>
     </table>
 </body>
 </html>
