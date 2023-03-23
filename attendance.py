@@ -137,7 +137,7 @@ def recognize_face(frame, action):
             first_match_index = matches.index(True)
             name = known_face_names[first_match_index]
 
-        print(name.upper())
+        print(name)
 
         if name in inside:
             if inside[name] and action == "Enter":
@@ -151,9 +151,9 @@ def recognize_face(frame, action):
         if tenant_data:
             parents_phone = tenant_data["parents_phone"]
             email = tenant_data["email"]
-            log_event(name.upper(), action, parents_phone, email)
+            log_event(name, action, parents_phone, email)
         else:
-            log_event(name.upper(), action, "...", "...")
+            log_event(name, action, "...", "...")
         
         if action == "Exit":
             last_door_sensor_time = None
