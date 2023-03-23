@@ -129,7 +129,7 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
             while time.time() - start_time < display_time:
                 key = cv2.waitKey(1)
                 if key & 0xFF == ord('r'):  # Press 'r' to recognize the face in the frame
-                    recognize_face(frame)
+                    recognize_face(frame, "Entered")
                 elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
                     cv2.destroyAllWindows()
                     return
