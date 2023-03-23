@@ -91,15 +91,19 @@ def recognize_face(frame, action):
         matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
         name = "Unknown"
 
+        if True in matches:
+            first_match_index = matches.index(True)
+            name = known_face_names[first_match_index]
+
+        print(name.upper())
+
         tenant_data = tenants_data.get(name)
         if tenant_data:
             parents_phone = tenant_data["parents_phone"]
             email = tenant_data["email"]
-            print(name)
             log_event(name.upper(), action, parents_phone, email)
         else:
-            print("Unknown")
-            log_event(name.upper(), action, "Unknown", "Unknown")
+            log_event(name.upper(), action, "...", "...")
 
 def get_camera_feed():
     print("starting camera feed...")
