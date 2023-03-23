@@ -111,6 +111,8 @@ def log_event(name, action, parents_phone, email):
         inside[name] = True
     elif action == "Exit":
         inside[name] = False
+      
+    print(inside)
 
 def recognize_face(frame, action):
     global last_door_sensor_time
