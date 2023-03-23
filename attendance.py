@@ -109,25 +109,84 @@ def recognize_face(frame, action):
         else:
             log_event(name.upper(), action, "...", "...")
 
+def process_door_actions(state, key, frame):
+    global door_open_timestamp
+
+    user_input = None
+    if key == ord('o'):
+        user_input = "open_door"
+    elif key == ord('e'):
+        user_input = "enter"
+    elif key == ord('x'):
+        user_input = "exit"
+
+    if user_input == "open_door":
+        if state == "IDLE":
+            door_open_timestamp = time.time()
+            state = "DOOR_OPEN"
+            print("Door opened.")
+
+    elif user_input == "enter":
+        if state == "DOOR_OPEN":
+            recognize_face(frame, "entered")
+            state = "IDLE"
+            print("Entered successfully.")
+        else:
+            print("Door is not open.")
+
+    elif user_input == "exit":
+        if state == "IDLE":
+            recognize_face(frame, "exited")
+            state = "EXITING"
+            door_open_timestamp = time.time()
+        else:
+            print("Cannot exit while door is open.")
+
+    return state
+
 def get_camera_feed():
-    print("starting camera feed...")
-    load_known_faces()
+    state = "IDLE"
+    global door_open_timestamp
+    door_open_timeout = 30
+
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("Error opening the camera.")
+        return None
 
     while True:
         ret, frame = cap.read()
+
+        if not ret:
+            break
+
         cv2.imshow('Camera Feed', frame)
 
-        key = cv2.waitKey(1)
-        if key & 0xFF == ord('r'):  # Press 'r' to recognize the face in the frame
-            recognize_face(frame, "Entered") #TODO: Adjust this parameter with the door sensor
-        elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
             break
+
+        state = process_door_actions(state, key, frame)
+
+        # Check if the door_open_timeout has been reached
+        if state == "DOOR_OPEN" and time.time() - door_open_timestamp > door_open_timeout:
+            print("Alert! Possible intruder inside.")
+            log_event("Unknown", "intruder", "Unknown", "Unknown")
+            state = "IDLE"
+
+        # Check if the exit timeout has been reached
+        if state == "EXITING" and time.time() - door_open_timestamp > door_open_timeout:
+            print("Exit timeout reached. Resetting state.")
+            state = "IDLE"
 
     cap.release()
     cv2.destroyAllWindows()
 
 def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
+    state = "IDLE"
+    global door_open_timestamp
+    door_open_timeout = 30
+
     print("starting camera feed...")
     load_known_faces()
 
@@ -162,9 +221,20 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
 
             start_time = time.time()
             while time.time() - start_time < display_time:
-                key = cv2.waitKey(1)
-                if key & 0xFF == ord('r'):  # Press 'r' to recognize the face in the frame
-                    recognize_face(frame, "Entered")
+                key = cv2.waitKey(1) & 0xFF
+
+                state = process_door_actions(state, key, frame)
+
+                # Check if the door_open_timeout has been reached
+                if state == "DOOR_OPEN" and time.time() - door_open_timestamp > door_open_timeout:
+                    print("Alert! Possible intruder inside.")
+                    log_event("Unknown", "intruder", "Unknown", "Unknown")
+                    state = "IDLE"
+
+                # Check if the exit timeout has been reached
+                if state == "EXITING" and time.time() - door_open_timestamp > door_open_timeout:
+                    print("Exit timeout reached. Resetting state.")
+                    state = "IDLE"
                 elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
                     cv2.destroyAllWindows()
                     return
