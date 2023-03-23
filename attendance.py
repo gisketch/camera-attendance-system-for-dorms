@@ -176,6 +176,7 @@ def get_camera_feed():
             recognize_face(frame, "Exit")
         elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
             break
+        check_intruder()
 
     cap.release()
     cv2.destroyAllWindows()
@@ -225,6 +226,7 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                 elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
                     cv2.destroyAllWindows()
                     return
+                check_intruder()
 
 if __name__ == "__main__":
     get_image_feed()
