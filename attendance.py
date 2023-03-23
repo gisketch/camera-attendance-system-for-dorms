@@ -1,89 +1,139 @@
-import os
-import json
-from datetime import datetime
-from gpiozero import Button
-from picamera import PiCamera
-from time import sleep
-import face_recognition
 import cv2
+import face_recognition
+import os
+import time
+import drivers
 import numpy as np
-from drivers import Lcd, CustomCharacters
+from datetime import datetime
+import json
 
-# Initialize camera and buttons
-camera = PiCamera()
-enter_button = Button(17)
-exit_button = Button(27)
+print("Initializing...")
 
-# Define tenants
-tenants = {
-    "tenant_1": {
-        "name": "John Doe",
-        "encoding": None,
-        "phone": "+1234567890"
-    },
-    # Add more tenants here
-}
+lcd = drivers.Lcd()
+print("LCD initialized")
 
-# Load face encodings for each tenant
-for tenant_id, tenant_data in tenants.items():
-    image = face_recognition.load_image_file(f"faces/{tenant_id}.jpg")
-    face_encoding = face_recognition.face_encodings(image)[0]
-    tenants[tenant_id]["encoding"] = face_encoding
+# Load known faces and their encodings
+known_faces = []
+known_face_encodings = []
+known_face_names = []
 
-def save_to_database(name, action):
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    record = {"name": name, "action": action, "timestamp": current_time}
+def load_known_faces():
+    global known_faces, known_face_encodings, known_face_names
 
-    if os.path.exists("attendance.json"):
-        with open("attendance.json", "r") as f:
-            data = json.load(f)
-    else:
-        data = []
+    # Set the folder containing the images of known faces
+    image_folder = "tenants"
 
-    data.append(record)
+    # Iterate over all image files in the folder
+    for file in os.listdir(image_folder):
+        # Check if the file is an image (you can add more extensions if needed)
+        if file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg"):
+            # Load the image and compute the face encoding
+            file_path = os.path.join(image_folder, file)
+            image = face_recognition.load_image_file(file_path)
+            encoding = face_recognition.face_encodings(image)[0]
 
-    with open("attendance.json", "w") as f:
-        json.dump(data, f)
+            # Remove the file extension to get the name
+            name = os.path.splitext(file)[0]
 
-def recognize_face():
-    camera.capture("temp.jpg")
-    image = face_recognition.load_image_file("temp.jpg")
-    face_locations = face_recognition.face_locations(image)
+            known_faces.append(image)
+            known_face_encodings.append(encoding)
+            known_face_names.append(name)
 
-    if len(face_locations) > 0:
-        face_encodings = face_recognition.face_encodings(image, face_locations)
-        face_enc = face_encodings[0]
+def log_event(name, action):
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    log_entry = {"timestamp": timestamp, "name": name, "action": action}
 
-        # Compare the face encoding with known tenants
-        for tenant_id, tenant_data in tenants.items():
-            match = face_recognition.compare_faces([tenant_data["encoding"]], face_enc, tolerance=0.5)
-            if match[0]:
-                return tenant_data["name"]
+    log_file = 'log.json'
+    log_data = []
 
-    return None
+    if os.path.exists(log_file):
+        with open(log_file, 'r') as file:
+            log_data = json.load(file)
 
-def on_button_press(action):
-    lcd.lcd_clear()
-    lcd.lcd_display_string("Recognizing...", 1)
-    name = recognize_face()
+    log_data.append(log_entry)
 
-    if name:
-        lcd.lcd_clear()
-        lcd.lcd_display_string(f"{name}", 1)
-        lcd.lcd_display_string(f"{action}", 2)
-        save_to_database(name, action)
-    else:
-        lcd.lcd_clear()
-        lcd.lcd_display_string("Unknown face", 1)
+    with open(log_file, 'w') as file:
+        json.dump(log_data, file, indent=4)
 
-# Initialize LCD
-lcd = Lcd()
+def recognize_face(frame, action):
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    face_locations = face_recognition.face_locations(rgb_frame)
 
-# Main loop
-while True:
-    if enter_button.is_pressed:
-        on_button_press("Entered")
-        sleep(1)
-    elif exit_button.is_pressed:
-        on_button_press("Exited")
-        sleep(1)
+    if len(face_locations) == 0:
+        print("No face detected. Canceling the process.")
+        return
+
+    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+    for face_encoding, face_location in zip(face_encodings, face_locations):
+        matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+        name = "Unknown"
+
+        if True in matches:
+            first_match_index = matches.index(True)
+            name = known_face_names[first_match_index]
+
+        print(name)
+        log_event(name, action)
+
+def get_camera_feed():
+    load_known_faces()
+    cap = cv2.VideoCapture(0)
+
+    while True:
+        ret, frame = cap.read()
+        cv2.imshow('Camera Feed', frame)
+
+        key = cv2.waitKey(1)
+        if key & 0xFF == ord('r'):  # Press 'r' to recognize the face in the frame
+            recognize_face(frame, "Entered") #TODO: Adjust this parameter with the door sensor
+        elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
+    load_known_faces()
+
+    image_files = [file for file in os.listdir(directory) if file.endswith((".jpg", ".png", ".jpeg"))]
+
+    while True:
+        for image_file in image_files:
+            file_path = os.path.join(directory, image_file)
+            image = cv2.imread(file_path)
+
+            # Resize the image while maintaining aspect ratio
+            height, width = image.shape[:2]
+            aspect_ratio = float(width) / float(height)
+            new_width = fixed_resolution[0]
+            new_height = int(new_width / aspect_ratio)
+
+            if new_height > fixed_resolution[1]:
+                new_height = fixed_resolution[1]
+                new_width = int(new_height * aspect_ratio)
+
+            resized_image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
+            
+            # Create a black frame with the fixed resolution
+            frame = np.zeros((fixed_resolution[1], fixed_resolution[0], 3), dtype=np.uint8)
+
+            # Place the resized image in the center of the frame
+            y_offset = (fixed_resolution[1] - new_height) // 2
+            x_offset = (fixed_resolution[0] - new_width) // 2
+            frame[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = resized_image
+
+            cv2.imshow('Image Feed', frame)
+
+            start_time = time.time()
+            while time.time() - start_time < display_time:
+                key = cv2.waitKey(1)
+                if key & 0xFF == ord('r'):  # Press 'r' to recognize the face in the frame
+                    recognize_face(frame)
+                elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
+                    cv2.destroyAllWindows()
+                    return
+
+if __name__ == "__main__":
+    get_image_feed()
+    # get_camera_feed()
