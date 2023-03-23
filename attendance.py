@@ -84,6 +84,10 @@ def recognize_face(frame, action):
     if len(face_locations) == 0:
         print("No face detected. Canceling the process.")
         return
+    
+    elif len(face_locations) > 1:
+        print("Multiple faces detected. Try again.")
+        return
 
     face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
