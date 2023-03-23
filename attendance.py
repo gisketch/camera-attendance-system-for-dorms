@@ -112,6 +112,7 @@ def log_event(name, action, parents_phone, email):
     elif action == "Exit":
         inside[name] = False
       
+    print(f"{name} - {action} - {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp))}")
     print(inside)
 
 def recognize_face(frame, action):
