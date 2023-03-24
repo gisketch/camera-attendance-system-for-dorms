@@ -41,10 +41,11 @@ intruder_timer = None
 enter_key_pressed = False
 
 def door_sensor_triggered():
-    global last_door_sensor_time, waiting_for_exit, intruder_timer, enter_key_pressed
-    print("Door was opened.")
+    global last_door_sensor_time, waiting_for_exit, intruder_timer, enter_key_pressed, last_door_sensor_triggered
+    print("Door was opened...")
 
     last_door_sensor_time = time.time()
+    last_door_sensor_triggered = True
     if waiting_for_exit:
         waiting_for_exit = False
     else:
@@ -215,12 +216,14 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                 if key == ord("d"):
                     door_sensor_triggered()
                 if key == ord("e"):
+                    print("Enter key pressed")
                     enter_key_pressed = True
                     if last_door_sensor_triggered:
                         recognize_face(frame, "Enter")
                         last_door_sensor_triggered = False
                         intruder_timer = None  # Reset the intruder timer
                 elif key == ord("x"):
+                    print("Exit key pressed")
                     if not last_door_sensor_triggered:
                         waiting_for_exit = True
                         recognize_face(frame, "Exit")
