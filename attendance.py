@@ -42,6 +42,7 @@ enter_key_pressed = False
 
 def door_sensor_triggered():
     global last_door_sensor_time, waiting_for_exit, intruder_timer, enter_key_pressed
+    print("Door was opened.")
 
     last_door_sensor_time = time.time()
     if waiting_for_exit:
@@ -172,7 +173,7 @@ def get_camera_feed():
     cv2.destroyAllWindows()
 
 def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
 
     waiting_time = 10  # 10 seconds waiting time
 
