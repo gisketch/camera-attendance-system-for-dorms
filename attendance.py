@@ -19,7 +19,6 @@ known_face_names = []
 
 inside = {}
 log_data = []
-waiting_for_exit = False
 
 def load_tenants_data():
     tenants_data_file = 'tenants_data.json'
@@ -37,44 +36,10 @@ tenants_data = load_tenants_data()
 last_door_sensor_time = None
 
 def door_sensor_triggered():
-    global last_door_sensor_time, waiting_for_exit
-
-    if waiting_for_exit:
-        waiting_for_exit = False
-        return
+    global last_door_sensor_time
 
     last_door_sensor_time = time.time()
     print("Door sensor triggered.")
-
-def check_intruder():
-    global last_door_sensor_time
-
-    if last_door_sensor_time is None:
-        return
-
-    time_since_sensor = time.time() - last_door_sensor_time
-
-    if time_since_sensor < 60:  # 1 minute
-        return
-
-    intruder_detected = True
-    print("Possible intruder! Checking the log...")
-
-    for name, inside_status in inside.items():
-        for entry in log_data:
-            entry_timefloat = entry.get("timefloat", 0)  # Get the timefloat value, or use 0 as the default
-            if (entry_timefloat > last_door_sensor_time - 60 and
-                    entry["action"] == "Enter" and entry["name"] == name and inside_status):
-                intruder_detected = False
-                break
-
-    if intruder_detected:
-        print("Intruder alert!")
-        log_event("Unknown", "Intruder", "Unknown", "Unknown")
-        last_door_sensor_time = None
-    else:
-        print("Nevermind, it was a tenant.")
-        last_door_sensor_time = None
 
 
 def load_known_faces():
@@ -134,7 +99,7 @@ def log_event(name, action, parents_phone, email):
     print(f"{name} - {action} - {timestamp_readable}")
 
 def recognize_face(frame, action):
-    global last_door_sensor_time, waiting_for_exit
+    global last_door_sensor_time
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     face_locations = face_recognition.face_locations(rgb_frame)
 
@@ -176,7 +141,6 @@ def recognize_face(frame, action):
         
         if action == "Exit" and name in tenants_data:
             print(f"{name} is exiting.")
-            waiting_for_exit = True
             log_event(name, action, tenants_data[name]["parents_phone"], tenants_data[name]["email"])
             inside[name] = False
 
@@ -198,7 +162,6 @@ def get_camera_feed():
             recognize_face(frame, "Exit")
         elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
             break
-        check_intruder()
 
     cap.release()
     cv2.destroyAllWindows()
@@ -248,7 +211,6 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                 elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
                     cv2.destroyAllWindows()
                     return
-                check_intruder()
 
 if __name__ == "__main__":
     get_image_feed()
