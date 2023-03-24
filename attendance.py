@@ -19,6 +19,7 @@ known_face_names = []
 
 inside = {}
 log_data = []
+waiting_for_exit = False
 
 def load_tenants_data():
     tenants_data_file = 'tenants_data.json'
@@ -34,19 +35,16 @@ def load_tenants_data():
 tenants_data = load_tenants_data()
 
 last_door_sensor_time = None
-exit_pending = None
 
 def door_sensor_triggered():
-    global last_door_sensor_time, exit_pending
+    global last_door_sensor_time, waiting_for_exit
+
+    if waiting_for_exit:
+        waiting_for_exit = False
+        return
+
     last_door_sensor_time = time.time()
-
-    if exit_pending and last_door_sensor_time - exit_pending["timestamp"] < 30:
-        log_event(exit_pending["name"], "Exit", exit_pending["parents_phone"], exit_pending["email"])
-        inside[exit_pending["name"]] = False
-        exit_pending = None
-
     print("Door sensor triggered.")
-
 
 def check_intruder():
     global last_door_sensor_time
@@ -136,7 +134,7 @@ def log_event(name, action, parents_phone, email):
     print(f"{name} - {action} - {timestamp_readable}")
 
 def recognize_face(frame, action):
-    global last_door_sensor_time, exit_pending
+    global last_door_sensor_time
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     face_locations = face_recognition.face_locations(rgb_frame)
 
@@ -176,13 +174,11 @@ def recognize_face(frame, action):
         else:
             log_event(name, action, "...", "...")
         
-        if action == "Exit":
-            exit_pending = {
-                "timestamp": time.time(),
-                "name": name,
-                "parents_phone": parents_phone,
-                "email": email
-            }
+        if action == "Exit" and name in tenants_data:
+            print(f"{name} is exiting.")
+            waiting_for_exit = True
+            log_event(name, action, tenants_data[name]["parents_phone"], tenants_data[name]["email"])
+            inside[name] = False
 
 def get_camera_feed():
     print("starting camera feed...")
