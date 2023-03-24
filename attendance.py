@@ -164,6 +164,8 @@ def get_camera_feed():
     cv2.destroyAllWindows()
 
 def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
+    global last_door_sensor_triggered
+    
     print("starting camera feed...")
     load_known_faces()
 
