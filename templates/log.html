@@ -21,6 +21,15 @@
         th {
             background-color: #f2f2f2;
         }
+        tr.enter {
+            background-color: #d4edda;
+        }
+        tr.exit {
+            background-color: #ffeeba;
+        }
+        tr.intruder {
+            background-color: #f8d7da;
+        }
     </style>
     <title>Log</title>
 </head>
@@ -38,8 +47,8 @@
       </thead>
       <tbody>
           {% for entry in log_data %}
-          <tr>
-              <td>{{ entry.timestamp }}</td>
+          <tr class="{{ 'enter' if entry.action == 'Enter' else 'exit' if entry.action == 'Exit' else 'intruder' }}">
+              <td>{{ entry.timestamp_readable }}</td>
               <td>{{ entry.name }}</td>
               <td>{{ entry.action }}</td>
               <td>{{ entry.parents_phone }}</td>

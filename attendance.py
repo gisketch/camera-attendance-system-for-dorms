@@ -61,10 +61,12 @@ def check_intruder():
                     entry["action"] == "Enter" and entry["name"] == name and inside_status):
                 intruder_detected = False
                 print("Nevermind, it was a tenant.")
+                last_door_sensor_time = None
                 break
 
     if intruder_detected:
         print("Intruder alert!")
+        log_event("Unknown", "Intruder", "Unknown", "Unknown")
         last_door_sensor_time = None
 
 
