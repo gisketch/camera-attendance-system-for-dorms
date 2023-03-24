@@ -16,11 +16,11 @@ print("LCD initialized")
 known_faces = []
 known_face_encodings = []
 known_face_names = []
-button_press_timestamps = []
 
 inside = {}
 log_data = []
 waiting_for_exit = False
+tenant_just_entered = False
 
 def load_tenants_data():
     tenants_data_file = 'tenants_data.json'
@@ -48,7 +48,7 @@ def door_sensor_triggered():
     print("Door sensor triggered.")
 
 def check_intruder():
-    global last_door_sensor_time
+    global last_door_sensor_time, tenant_just_entered
 
     if last_door_sensor_time is None:
         return
@@ -61,22 +61,17 @@ def check_intruder():
     intruder_detected = True
     print("Possible intruder! Checking the log...")
 
-    for name, inside_status in inside.items():
-        for entry in log_data:
-            entry_timefloat = entry.get("timefloat", 0)  # Get the timefloat value, or use 0 as the default
-            if (entry_timefloat > last_door_sensor_time - 60 and
-                    entry["action"] == "Enter" and entry["name"] == name and inside_status):
-                # Check if there is a corresponding button press for this entry
-                for button_press_timestamp in button_press_timestamps:
-                    if abs(button_press_timestamp - entry_timefloat) < 5:  # Allow a 5-second difference
-                        intruder_detected = False
-                        break
-
-                if not intruder_detected:  # If a tenant was found inside, break the inner loop
+    if tenant_just_entered:
+        intruder_detected = False
+        tenant_just_entered = False
+    else:
+        for name, inside_status in inside.items():
+            for entry in log_data:
+                entry_timefloat = entry.get("timefloat", 0)  # Get the timefloat value, or use 0 as the default
+                if (entry_timefloat > last_door_sensor_time - 60 and
+                        entry["action"] == "Enter" and entry["name"] == name and inside_status):
+                    intruder_detected = False
                     break
-
-        if not intruder_detected:  # If a tenant was found inside, break the outer loop as well
-            break
 
     if intruder_detected:
         print("Intruder alert!")
@@ -85,6 +80,7 @@ def check_intruder():
     else:
         print("Nevermind, it was a tenant.")
         last_door_sensor_time = None
+
 
 
 def load_known_faces():
@@ -144,13 +140,10 @@ def log_event(name, action, parents_phone, email):
     print(f"{name} - {action} - {timestamp_readable}")
 
 def recognize_face(frame, action):
-    global last_door_sensor_time, button_press_timestamps
+    global last_door_sensor_time, tenant_just_entered
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     face_locations = face_recognition.face_locations(rgb_frame)
-    
-    if action == "Enter":
-      button_press_timestamps.append(time.time())
-      
+
     if len(face_locations) == 0:
         print("No face detected. Canceling the process.")
         return
@@ -184,9 +177,13 @@ def recognize_face(frame, action):
             parents_phone = tenant_data["parents_phone"]
             email = tenant_data["email"]
             log_event(name, action, parents_phone, email)
+            if action == "Enter":
+                tenant_just_entered = True
+            elif action == "Exit":
+                tenant_just_entered = False
         else:
             log_event(name, action, "...", "...")
-
+        
         if action == "Exit" and name in tenants_data:
             print(f"{name} is exiting.")
             waiting_for_exit = True
