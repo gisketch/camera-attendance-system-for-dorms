@@ -8,7 +8,7 @@ app = Flask(__name__)
 def get_ip_address():
     try:
         hostname = socket.gethostname()
-        ip_address = socket.gethostbyname(hostname)
+        ip_address = socket.getaddrinfo(hostname, None, family=socket.AF_INET)[0][-1][0]
         return ip_address
     except:
         return "Unable to get IP address"

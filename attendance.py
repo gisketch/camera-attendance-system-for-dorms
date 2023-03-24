@@ -34,11 +34,19 @@ def load_tenants_data():
 tenants_data = load_tenants_data()
 
 last_door_sensor_time = None
+exit_pending = None
 
 def door_sensor_triggered():
-    global last_door_sensor_time
+    global last_door_sensor_time, exit_pending
     last_door_sensor_time = time.time()
+
+    if exit_pending and last_door_sensor_time - exit_pending["timestamp"] < 30:
+        log_event(exit_pending["name"], "Exit", exit_pending["parents_phone"], exit_pending["email"])
+        inside[exit_pending["name"]] = False
+        exit_pending = None
+
     print("Door sensor triggered.")
+
 
 def check_intruder():
     global last_door_sensor_time
@@ -128,7 +136,7 @@ def log_event(name, action, parents_phone, email):
     print(f"{name} - {action} - {timestamp_readable}")
 
 def recognize_face(frame, action):
-    global last_door_sensor_time
+    global last_door_sensor_time, exit_pending
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     face_locations = face_recognition.face_locations(rgb_frame)
 
@@ -169,7 +177,12 @@ def recognize_face(frame, action):
             log_event(name, action, "...", "...")
         
         if action == "Exit":
-            last_door_sensor_time = None
+            exit_pending = {
+                "timestamp": time.time(),
+                "name": name,
+                "parents_phone": parents_phone,
+                "email": email
+            }
 
 def get_camera_feed():
     print("starting camera feed...")
