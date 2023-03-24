@@ -38,16 +38,17 @@ last_door_sensor_triggered = False
 
 waiting_for_exit = False
 intruder_timer = None
+enter_key_pressed = False
 
 def door_sensor_triggered():
-    global last_door_sensor_time, waiting_for_exit, intruder_timer
-    print("Door sensor triggered")
+    global last_door_sensor_time, waiting_for_exit, intruder_timer, enter_key_pressed
 
     last_door_sensor_time = time.time()
     if waiting_for_exit:
         waiting_for_exit = False
     else:
         intruder_timer = time.time()
+        enter_key_pressed = False
 
 def load_known_faces():
     
@@ -213,6 +214,7 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                 if key == ord("d"):
                     door_sensor_triggered()
                 if key == ord("e"):
+                    enter_key_pressed = True
                     if last_door_sensor_triggered:
                         recognize_face(frame, "Enter")
                         last_door_sensor_triggered = False
@@ -226,13 +228,12 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                     cv2.destroyAllWindows()
                     return
 
-            # Check for possible intruder
-            if intruder_timer:
-                if time.time() - intruder_timer > waiting_time:
-                    log_event("Possible intruder", "Alert", "...", "...")
+                # Check for possible intruder
+                if intruder_timer and time.time() - intruder_timer > waiting_time:
+                    if not enter_key_pressed:
+                        log_event("Possible intruder", "Alert", "...", "...")
                     intruder_timer = None  # Reset the intruder timer
-                else:
-                    continue  # Keep checking for intruder timer while accepting in
+
 
 if __name__ == "__main__":
     get_image_feed()
