@@ -237,6 +237,7 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                     if not enter_key_pressed:
                         log_event("Possible intruder", "Alert", "...", "...")
                     intruder_timer = None  # Reset the intruder timer
+                    last_door_sensor_triggered = False
 
 
 if __name__ == "__main__":
