@@ -34,11 +34,13 @@ def load_tenants_data():
 tenants_data = load_tenants_data()
 
 last_door_sensor_time = None
+last_door_sensor_triggered = False
 
 def door_sensor_triggered():
-    global last_door_sensor_time
+    global last_door_sensor_time, last_door_sensor_triggered
 
     last_door_sensor_time = time.time()
+    last_door_sensor_triggered = True
     print("Door sensor triggered.")
 
 
@@ -198,11 +200,15 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
             while time.time() - start_time < display_time:
                 key = cv2.waitKey(1)
                 if key == ord("d"):
-                  door_sensor_triggered()
+                    door_sensor_triggered()
                 if key == ord("e"):
-                    recognize_face(frame, "Enter")
+                    if last_door_sensor_triggered:
+                        recognize_face(frame, "Enter")
+                        last_door_sensor_triggered = False
                 elif key == ord("x"):
-                    recognize_face(frame, "Exit")
+                    if not last_door_sensor_triggered:
+                        recognize_face(frame, "Exit")
+                        last_door_sensor_triggered = False
                 elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
                     cv2.destroyAllWindows()
                     return
