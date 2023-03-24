@@ -138,11 +138,6 @@ def recognize_face(frame, action):
             log_event(name, action, parents_phone, email)
         else:
             log_event(name, action, "...", "...")
-        
-        if action == "Exit" and name in tenants_data:
-            print(f"{name} is exiting.")
-            log_event(name, action, tenants_data[name]["parents_phone"], tenants_data[name]["email"])
-            inside[name] = False
 
 def get_camera_feed():
     print("starting camera feed...")
