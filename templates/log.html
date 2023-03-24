@@ -48,7 +48,7 @@
       <tbody>
           {% for entry in log_data %}
           <tr class="{{ 'enter' if entry.action == 'Enter' else 'exit' if entry.action == 'Exit' else 'intruder' }}">
-              <td>{{ entry.timestamp_readable }}</td>
+              <td>{{ entry.timestamp }}</td>
               <td>{{ entry.name }}</td>
               <td>{{ entry.action }}</td>
               <td>{{ entry.parents_phone }}</td>
