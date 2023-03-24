@@ -36,13 +36,33 @@ tenants_data = load_tenants_data()
 last_door_sensor_time = None
 last_door_sensor_triggered = False
 
+waiting_for_exit = False
+
 def door_sensor_triggered():
-    global last_door_sensor_time, last_door_sensor_triggered
+    global last_door_sensor_time, waiting_for_exit
 
     last_door_sensor_time = time.time()
-    last_door_sensor_triggered = True
-    print("Door sensor triggered.")
+    if waiting_for_exit:
+        waiting_for_exit = False
+    else:
+        check_for_intruder()
 
+def check_for_intruder():
+    global waiting_for_exit
+    start_time = time.time()
+    waiting_time = 10  # 10 seconds waiting time
+
+    while time.time() - start_time < waiting_time:
+        key = cv2.waitKey(1)
+        if key == ord("e"):
+            waiting_for_exit = False
+            return  # User pressed enter button, not an intruder
+        elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
+            cv2.destroyAllWindows()
+            return
+
+    # If the loop finishes without returning, log an intruder alert
+    log_event("Possible intruder", "Alert", "...", "...")
 
 def load_known_faces():
     
@@ -207,10 +227,9 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                     if last_door_sensor_triggered:
                         recognize_face(frame, "Enter")
                         last_door_sensor_triggered = False
-                    else:
-                        print("No one entered. Ignoring entry event.")
                 elif key == ord("x"):
                     if not last_door_sensor_triggered:
+                        waiting_for_exit = True
                         recognize_face(frame, "Exit")
                         last_door_sensor_triggered = False
                 elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
