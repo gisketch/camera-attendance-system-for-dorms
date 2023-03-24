@@ -165,7 +165,7 @@ def get_camera_feed():
 
 def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
     global last_door_sensor_triggered
-    
+
     print("starting camera feed...")
     load_known_faces()
 
@@ -207,6 +207,8 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                     if last_door_sensor_triggered:
                         recognize_face(frame, "Enter")
                         last_door_sensor_triggered = False
+                    else:
+                        print("No one entered. Ignoring entry event.")
                 elif key == ord("x"):
                     if not last_door_sensor_triggered:
                         recognize_face(frame, "Exit")
