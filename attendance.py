@@ -52,12 +52,15 @@ def check_intruder():
         return
 
     intruder_detected = True
+    print("Possible intruder! Checking the log...")
 
     for name, inside_status in inside.items():
         for entry in log_data:
-            if (entry["timefloat"] > last_door_sensor_time - 60 and
+            entry_timefloat = entry.get("timefloat", 0)  # Get the timefloat value, or use 0 as the default
+            if (entry_timefloat > last_door_sensor_time - 60 and
                     entry["action"] == "Enter" and entry["name"] == name and inside_status):
                 intruder_detected = False
+                print("Nevermind, it was a tenant.")
                 break
 
     if intruder_detected:
