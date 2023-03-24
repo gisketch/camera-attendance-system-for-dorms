@@ -51,13 +51,18 @@ def check_intruder():
     if time_since_sensor < 60:  # 1 minute
         return
 
-    # Check if there was a recognized entry in the last minute
-    for entry in log_data:
-        if entry["timestamp"] > last_door_sensor_time - 60 and entry["action"] == "Enter":
-            return
+    intruder_detected = True
 
-    print("Intruder alert!")
-    last_door_sensor_time = None
+    for name, inside_status in inside.items():
+        for entry in log_data:
+            if (entry["timefloat"] > last_door_sensor_time - 60 and
+                    entry["action"] == "Enter" and entry["name"] == name and inside_status):
+                intruder_detected = False
+                break
+
+    if intruder_detected:
+        print("Intruder alert!")
+        last_door_sensor_time = None
 
 
 def load_known_faces():
@@ -87,9 +92,11 @@ def load_known_faces():
 
 def log_event(name, action, parents_phone, email):
     global log_data
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    timestamp_float = float(time.time())
+    timestamp_readable = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp_float))
     log_entry = {
-        "timestamp": timestamp,
+        "timestamp": timestamp_readable,
+        "timefloat": timestamp_float,
         "name": name,
         "action": action,
         "parents_phone": parents_phone,
@@ -112,7 +119,7 @@ def log_event(name, action, parents_phone, email):
     elif action == "Exit":
         inside[name] = False
       
-    print(inside)
+    print(f"{name} - {action} - {timestamp_readable}")
 
 def recognize_face(frame, action):
     global last_door_sensor_time
