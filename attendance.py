@@ -68,6 +68,9 @@ def check_intruder():
                 intruder_detected = False
                 break
 
+        if not intruder_detected:  # If a tenant was found inside, break the outer loop as well
+            break
+
     if intruder_detected:
         print("Intruder alert!")
         log_event("Unknown", "Intruder", "Unknown", "Unknown")
@@ -75,6 +78,7 @@ def check_intruder():
     else:
         print("Nevermind, it was a tenant.")
         last_door_sensor_time = None
+
 
 
 def load_known_faces():
