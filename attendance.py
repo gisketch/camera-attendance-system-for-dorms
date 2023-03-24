@@ -37,32 +37,16 @@ last_door_sensor_time = None
 last_door_sensor_triggered = False
 
 waiting_for_exit = False
+intruder_timer = None
 
 def door_sensor_triggered():
-    global last_door_sensor_time, waiting_for_exit
+    global last_door_sensor_time, waiting_for_exit, intruder_timer
 
     last_door_sensor_time = time.time()
     if waiting_for_exit:
         waiting_for_exit = False
     else:
-        check_for_intruder()
-
-def check_for_intruder():
-    global waiting_for_exit
-    start_time = time.time()
-    waiting_time = 10  # 10 seconds waiting time
-
-    while time.time() - start_time < waiting_time:
-        key = cv2.waitKey(1)
-        if key == ord("e"):
-            waiting_for_exit = False
-            return  # User pressed enter button, not an intruder
-        elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
-            cv2.destroyAllWindows()
-            return
-
-    # If the loop finishes without returning, log an intruder alert
-    log_event("Possible intruder", "Alert", "...", "...")
+        intruder_timer = time.time()
 
 def load_known_faces():
     
@@ -184,7 +168,9 @@ def get_camera_feed():
     cv2.destroyAllWindows()
 
 def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
-    global last_door_sensor_triggered
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer
+
+    waiting_time = 10  # 10 seconds waiting time
 
     print("starting camera feed...")
     load_known_faces()
@@ -227,6 +213,7 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                     if last_door_sensor_triggered:
                         recognize_face(frame, "Enter")
                         last_door_sensor_triggered = False
+                        intruder_timer = None  # Reset the intruder timer
                 elif key == ord("x"):
                     if not last_door_sensor_triggered:
                         waiting_for_exit = True
@@ -235,6 +222,11 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                 elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
                     cv2.destroyAllWindows()
                     return
+
+                # Check for possible intruder
+                if intruder_timer and time.time() - intruder_timer > waiting_time:
+                    log_event("Possible intruder", "Alert", "...", "...")
+                    intruder_timer = None  # Reset the intruder timer
 
 if __name__ == "__main__":
     get_image_feed()
