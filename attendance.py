@@ -227,6 +227,14 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                     return
 
                 # Check for possible intruder
+                if intruder_timer:
+                    if time.time() - intruder_timer > waiting_time:
+                        log_event("Possible intruder", "Alert", "...", "...")
+                        intruder_timer = None  # Reset the intruder timer
+                    else:
+                        continue  # Keep checking for intruder timer while accepting in
+
+                # Check for possible intruder
                 if intruder_timer and time.time() - intruder_timer > waiting_time:
                     log_event("Possible intruder", "Alert", "...", "...")
                     intruder_timer = None  # Reset the intruder timer
