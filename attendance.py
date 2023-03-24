@@ -41,6 +41,7 @@ intruder_timer = None
 
 def door_sensor_triggered():
     global last_door_sensor_time, waiting_for_exit, intruder_timer
+    print("Door sensor triggered")
 
     last_door_sensor_time = time.time()
     if waiting_for_exit:
@@ -108,6 +109,8 @@ def recognize_face(frame, action):
     global last_door_sensor_time
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     face_locations = face_recognition.face_locations(rgb_frame)
+
+    print("Recognizing...")
 
     if len(face_locations) == 0:
         print("No face detected. Canceling the process.")
