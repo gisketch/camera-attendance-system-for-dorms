@@ -2,15 +2,12 @@ import cv2
 import face_recognition
 import os
 import time
-import drivers
 import numpy as np
 from datetime import datetime
 import json
 
 print("Initializing...")
 
-lcd = drivers.Lcd()
-print("LCD initialized")
 
 # Load known faces and their encodings
 known_faces = []
