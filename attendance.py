@@ -153,6 +153,11 @@ def load_tenants_data():
     return data
 
 tenants_data = load_tenants_data()
+# Assume all tenants are inside at the start
+for tenant_name in tenants_data.keys():
+    inside[tenant_name] = True
+
+print(inside)
 
 last_door_sensor_time = None
 last_door_sensor_triggered = False
