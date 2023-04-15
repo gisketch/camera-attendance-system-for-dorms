@@ -26,6 +26,7 @@ def send_sms(phone_number, message):
 recipient_number = "09309118777"
 message_text = "Hello, this is a test message from my Raspberry Pi and SIM800L module!"
 
+send_command("AT+CREG?")
 send_sms(recipient_number, message_text)
 
 # Close the serial connection
