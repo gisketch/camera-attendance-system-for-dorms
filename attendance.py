@@ -103,7 +103,7 @@ start_time = None
 def display_time_and_status(frame):
     global status, start_time, timestamp, timefloat, tenants_data, inside
     # Display the fast-forwarded time at the top right
-    fast_forward_factor = 6  # 10 seconds equals 1 hour (60 minutes)
+    fast_forward_factor = 12  # 5 seconds equals 1 hour (60 minutes)
     current_time = datetime.datetime.now()
     time_elapsed = (datetime.datetime.now() - start_time).total_seconds()
     fast_forwarded_time = current_time + datetime.timedelta(minutes=time_elapsed * fast_forward_factor)
@@ -113,6 +113,8 @@ def display_time_and_status(frame):
     size = cv2.getTextSize(fast_forwarded_time_str, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
     width = frame.shape[1]
     putText(frame, fast_forwarded_time_str, (width - size[0] - 10, 30))
+
+    print(fast_forwarded_time.hour)
 
     # Check if it's 10 PM or 4 AM
     if fast_forwarded_time.hour in [22, 4]:
