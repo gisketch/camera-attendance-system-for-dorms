@@ -102,6 +102,9 @@ start_time = None
 
 def display_time_and_status(frame):
     global status, start_time, timestamp, timefloat, tenants_data, inside
+    # Add a global variable to track if the SMS messages have been sent
+    global sms_sent_flag
+
     # Display the fast-forwarded time at the top right
     fast_forward_factor = 12  # 5 seconds equals 1 hour (60 minutes)
     current_time = datetime.datetime.now()
@@ -116,16 +119,22 @@ def display_time_and_status(frame):
 
     # Check if it's 10 PM or 4 AM
     if fast_forwarded_time.hour in [22, 4]:
-        print("TRUE:", fast_forwarded_time.hour)
-        for tenant_name, is_inside in inside.items():
-            if not is_inside:
-                tenant_info = tenants_data.get(tenant_name)
-                if tenant_info:
-                    phone_number = tenant_info["parents_phone"]
-                    print(f"{tenant_name} - {phone_number}")
-                    print(f"Sending SMS to {phone_number}...")
-                    send_sms(phone_number, f"{tenant_name} is not home yet!")
-                    print(f"Message: {tenant_name} is not home yet!")
+        if not sms_sent_flag:
+            print("TRUE:", fast_forwarded_time.hour)
+            for tenant_name, is_inside in inside.items():
+                if not is_inside:
+                    tenant_info = tenants_data.get(tenant_name)
+                    if tenant_info:
+                        phone_number = tenant_info["parents_phone"]
+                        print(f"{tenant_name} - {phone_number}")
+                        print(f"Sending SMS to {phone_number}...")
+                        send_sms(phone_number, f"{tenant_name} is not home yet!")
+                        print(f"Message: {tenant_name} is not home yet!")
+            # Set the flag to True after sending the SMS messages
+            sms_sent_flag = True
+    else:
+        # Reset the flag when the hour changes
+        sms_sent_flag = False
 
     # Display the status at the bottom
     putText(frame, status, (10, frame.shape[0] - 10))
