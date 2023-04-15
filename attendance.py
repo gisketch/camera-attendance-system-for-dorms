@@ -367,5 +367,5 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
 
 
 if __name__ == "__main__":
-    get_image_feed()
-    # get_camera_feed()
+    # get_image_feed()
+    get_camera_feed()
