@@ -186,10 +186,9 @@ def load_known_faces():
             known_face_names.append(name)
 
 def log_event(name, action, parents_phone, email):
-    global log_data, status, timestamp, timefloat
+    global log_data, status, timestamp
     log_entry = {
         "timestamp": timestamp,
-        "timefloat": timefloat,
         "name": name,
         "action": action,
         "parents_phone": parents_phone,
