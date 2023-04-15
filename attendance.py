@@ -27,6 +27,8 @@ def send_command(cmd, wait_time=1):
 landlord_number = "09309118777"
 
 def send_sms(phone_number, message):
+    send_command("AT+CFUN=1")  # Set the SMS mode to text
+    time.sleep(1)
     send_command("AT+CMGF=1")  # Set the SMS mode to text
     send_command(f'AT+CMGS="{phone_number}"', wait_time=2)  # Set the recipient's phone number
     ser.write((message + '\x1A').encode())  # Send the message followed by the Ctrl+Z character (0x1A)
