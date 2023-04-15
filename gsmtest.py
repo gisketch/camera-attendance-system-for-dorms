@@ -5,7 +5,7 @@ import time
 ser = serial.Serial('/dev/serial0', 9600, timeout=1)
 
 # Turn on the SIM800L module
-ser.write(b'AT+CFUN=1\r\n')
+ser.write(b'AT+CFUN=1,1\r\n')
 time.sleep(1)
 
 # Set the module to text mode
