@@ -116,7 +116,7 @@ def display_time_and_status(frame):
 
     # Check if it's 10 PM or 4 AM
     if fast_forwarded_time.hour in [22, 4]:
-        print(True)
+        print("TRUE:", fast_forwarded_time.hour)
         for tenant_name, is_inside in inside.items():
             if not is_inside:
                 tenant_info = tenants_data.get(tenant_name)
