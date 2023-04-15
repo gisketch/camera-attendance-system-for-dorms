@@ -274,7 +274,7 @@ def recognize_face(frame, action):
             log_event(name, action, "...", "...")
 
 def get_camera_feed():
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, start_time, status_change_time, status, status_duration
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, start_time, status_change_time, status, status_duration, timestamp
 
     waiting_time = 10  # 10 seconds waiting time
 
@@ -349,7 +349,7 @@ def get_camera_feed():
         # Check for possible intruder
         if intruder_timer and time.time() - intruder_timer > waiting_time:
             if not enter_key_pressed:
-                send_sms(landlord_number, "Possible Intruder Alert")
+                send_sms(landlord_number, f"Possible intruder entered the dormitory at {timestamp}")
                 log_event("Possible intruder", "Alert", "...", "...")
             intruder_timer = None  # Reset the intruder timer
             last_door_sensor_triggered = False
