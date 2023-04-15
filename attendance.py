@@ -253,16 +253,39 @@ def get_camera_feed():
     load_known_faces()
     cap = cv2.VideoCapture(0)
 
-    # Set the window to fullscreen
+    # Set the window resolution
+    window_width, window_height = 1280, 720
+
+    # Set the window to normal and resize it
     cv2.namedWindow('Camera Feed', cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty('Camera Feed', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    cv2.resizeWindow('Camera Feed', window_width, window_height)
 
     while True:
         ret, frame = cap.read()
 
         display_time_and_status(frame)
 
-        cv2.imshow('Camera Feed', frame)
+        # Resize the camera feed to maintain aspect ratio and center it on the window
+        height, width = frame.shape[:2]
+        aspect_ratio = float(width) / float(height)
+        new_width = window_width
+        new_height = int(new_width / aspect_ratio)
+
+        if new_height > window_height:
+            new_height = window_height
+            new_width = int(new_height * aspect_ratio)
+
+        resized_frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
+
+        # Create a black frame with the window resolution
+        black_frame = np.zeros((window_height, window_width, 3), dtype=np.uint8)
+
+        # Place the resized frame in the center of the black frame
+        y_offset = (window_height - new_height) // 2
+        x_offset = (window_width - new_width) // 2
+        black_frame[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = resized_frame
+
+        cv2.imshow('Camera Feed', black_frame)
 
         key = cv2.waitKey(1)
         if key == ord("d"):
@@ -293,6 +316,7 @@ def get_camera_feed():
 
     cap.release()
     cv2.destroyAllWindows()
+
 
 def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
     global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
