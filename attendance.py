@@ -1,12 +1,49 @@
 import cv2
 import face_recognition
 import os
+import RPi.GPIO as GPIO
 import time
 import numpy as np
 from datetime import datetime
 import json
 
-print("Initializing...")
+print("Initializing GPIO connections...")
+# Use the BCM numbering scheme for the GPIO pins
+GPIO.setmode(GPIO.BCM)
+
+# Define the GPIO pin numbers for the buttons
+button1_pin = 17
+button2_pin = 27
+# Define the GPIO pin number for the door sensor
+door_sensor_pin = 22
+
+print("Setting up GPIO pins...")
+# Set up the GPIO pins as inputs with internal pull-up resistors enabled
+GPIO.setup(button1_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(button2_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(door_sensor_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+def button1_callback(channel):
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
+    print("Button 1 pressed")
+    
+def button2_callback(channel):
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
+    print("Button 2 pressed")
+
+def door_sensor_callback(channel):
+    if GPIO.input(door_sensor_pin):
+        print("Door opened")
+    else:
+        print("Door closed")
+        door_sensor_triggered()
+
+# Set up the interrupt-driven callback for the door sensor
+GPIO.add_event_detect(door_sensor_pin, GPIO.BOTH, callback=door_sensor_callback, bouncetime=300)
+# Set up the interrupt-driven callbacks for the buttons
+GPIO.add_event_detect(button1_pin, GPIO.FALLING, callback=button1_callback, bouncetime=300)
+GPIO.add_event_detect(button2_pin, GPIO.FALLING, callback=button2_callback, bouncetime=300)
+
 
 
 # Load known faces and their encodings
@@ -226,6 +263,8 @@ def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 4
                         recognize_face(frame, "Exit")
                         last_door_sensor_triggered = False
                 elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
+                    print("Cleaning up...")
+                    GPIO.cleanup()
                     cv2.destroyAllWindows()
                     return
 
