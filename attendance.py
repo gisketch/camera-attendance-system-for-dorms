@@ -53,20 +53,22 @@ GPIO.setup(button2_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(door_sensor_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def button1_callback(channel):
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, status
     print("Button 1 pressed (Enter)")
     enter_key_pressed = True
     if last_door_sensor_triggered:
         recognize_face(global_frame, "Enter")
+        status = "Enter key pressed, recognizing face..."
         last_door_sensor_triggered = False
         intruder_timer = None  # Reset the intruder timer
 
 def button2_callback(channel):
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, status
     print("Button 2 pressed (Exit)")
     if not last_door_sensor_triggered:
         waiting_for_exit = True
         recognize_face(global_frame, "Exit")
+        status = "Exit key pressed, recognizing face..."
         last_door_sensor_triggered = False
 
 def door_sensor_callback(channel):
@@ -88,13 +90,19 @@ status = "Ready"
 def putText(frame, text, position, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, color=(255, 255, 255), thickness=2):
     cv2.putText(frame, text, position, font, scale, color, thickness, cv2.LINE_AA)
 
+start_time = None
+
 def display_time_and_status(frame):
-    global status
-    # Display the current time at the top right
-    current_time = datetime.now().strftime('%m/%d/%Y %I:%M %p')
-    size = cv2.getTextSize(current_time, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
+    global status, start_time
+    # Display the fast-forwarded time at the top right
+    fast_forward_factor = 6  # 10 seconds equals 1 hour (60 minutes)
+    current_time = datetime.datetime.now()
+    time_elapsed = (datetime.datetime.now() - start_time).total_seconds()
+    fast_forwarded_time = current_time + datetime.timedelta(minutes=time_elapsed * fast_forward_factor)
+    fast_forwarded_time_str = fast_forwarded_time.strftime('%m/%d/%Y %I:%M %p')
+    size = cv2.getTextSize(fast_forwarded_time_str, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
     width = frame.shape[1]
-    putText(frame, current_time, (width - size[0] - 10, 30))
+    putText(frame, fast_forwarded_time_str, (width - size[0] - 10, 30))
 
     # Display the status at the bottom
     putText(frame, status, (10, frame.shape[0] - 10))
@@ -166,7 +174,7 @@ def load_known_faces():
             known_face_names.append(name)
 
 def log_event(name, action, parents_phone, email):
-    global log_data
+    global log_data, status
     timestamp_float = float(time.time())
     timestamp_readable = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp_float))
     log_entry = {
@@ -195,6 +203,7 @@ def log_event(name, action, parents_phone, email):
         inside[name] = False
       
     print(f"{name} - {action} - {timestamp_readable}")
+    status=f"Logged - {name} - {action}"
 
 def recognize_face(frame, action):
     global last_door_sensor_time
@@ -240,7 +249,7 @@ def recognize_face(frame, action):
             log_event(name, action, "...", "...")
 
 def get_camera_feed():
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, start_time
 
     waiting_time = 10  # 10 seconds waiting time
 
@@ -255,6 +264,7 @@ def get_camera_feed():
     cv2.namedWindow('Camera Feed', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('Camera Feed', window_width, window_height)
 
+    start_time = datetime.datetime.now()
     while True:
         ret, frame = cap.read()
         global_frame = frame
