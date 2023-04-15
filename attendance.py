@@ -76,7 +76,7 @@ enter_key_pressed = False
 
 def door_sensor_triggered():
     global last_door_sensor_time, waiting_for_exit, intruder_timer, enter_key_pressed, last_door_sensor_triggered
-    print("Door was opened...")
+    print("Door triggered...")
 
     last_door_sensor_time = time.time()
     last_door_sensor_triggered = True
