@@ -13,7 +13,7 @@ ser.write(b'AT+CMGF=1\r\n')
 time.sleep(1)
 
 # Set the phone number to which you want to send the SMS
-phone_number = "09309118777"
+phone_number = "+639309118777"
 
 # Set the SMS text message
 sms_message = "Hello from Raspberry Pi!"
