@@ -114,10 +114,9 @@ def display_time_and_status(frame):
     width = frame.shape[1]
     putText(frame, fast_forwarded_time_str, (width - size[0] - 10, 30))
 
-    print(fast_forwarded_time.hour)
-
     # Check if it's 10 PM or 4 AM
     if fast_forwarded_time.hour in [22, 4]:
+        print(True)
         for tenant_name, is_inside in inside.items():
             if not is_inside:
                 tenant_info = tenants_data.get(tenant_name)
