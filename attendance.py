@@ -57,8 +57,8 @@ def button1_callback(channel):
     print("Button 1 pressed (Enter)")
     enter_key_pressed = True
     if last_door_sensor_triggered:
+        change_status("Enter key pressed")
         recognize_face(global_frame, "Enter")
-        status = "Enter key pressed, recognizing face..."
         last_door_sensor_triggered = False
         intruder_timer = None  # Reset the intruder timer
 
@@ -67,8 +67,8 @@ def button2_callback(channel):
     print("Button 2 pressed (Exit)")
     if not last_door_sensor_triggered:
         waiting_for_exit = True
+        change_status("Exit key pressed")
         recognize_face(global_frame, "Exit")
-        status = "Exit key pressed, recognizing face..."
         last_door_sensor_triggered = False
 
 def door_sensor_callback(channel):
@@ -84,8 +84,16 @@ GPIO.add_event_detect(door_sensor_pin, GPIO.BOTH, callback=door_sensor_callback,
 GPIO.add_event_detect(button1_pin, GPIO.FALLING, callback=button1_callback, bouncetime=300)
 GPIO.add_event_detect(button2_pin, GPIO.FALLING, callback=button2_callback, bouncetime=300)
 
+default_status = "Waiting for Enter/Exit"
 
-status = "Ready"
+status = "Waiting for Enter/Exit"
+status_change_time = 0
+status_duration = 5  # Duration to keep the changed status (in seconds)
+
+def change_status(new_status):
+    global status, status_change_time
+    status = new_status
+    status_change_time = time.time()
 
 def putText(frame, text, position, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, color=(255, 255, 255), thickness=2):
     cv2.putText(frame, text, position, font, scale, color, thickness, cv2.LINE_AA)
@@ -93,13 +101,15 @@ def putText(frame, text, position, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, col
 start_time = None
 
 def display_time_and_status(frame):
-    global status, start_time
+    global status, start_time, timestamp, timefloat
     # Display the fast-forwarded time at the top right
     fast_forward_factor = 6  # 10 seconds equals 1 hour (60 minutes)
     current_time = datetime.datetime.now()
     time_elapsed = (datetime.datetime.now() - start_time).total_seconds()
     fast_forwarded_time = current_time + datetime.timedelta(minutes=time_elapsed * fast_forward_factor)
     fast_forwarded_time_str = fast_forwarded_time.strftime('%m/%d/%Y %I:%M %p')
+    timefloat = fast_forwarded_time
+    timestamp = fast_forwarded_time_str
     size = cv2.getTextSize(fast_forwarded_time_str, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
     width = frame.shape[1]
     putText(frame, fast_forwarded_time_str, (width - size[0] - 10, 30))
@@ -115,6 +125,8 @@ global_frame = None
 
 inside = {}
 log_data = []
+timestamp = ""
+timefloat = None
 
 def load_tenants_data():
     tenants_data_file = 'tenants_data.json'
@@ -174,12 +186,10 @@ def load_known_faces():
             known_face_names.append(name)
 
 def log_event(name, action, parents_phone, email):
-    global log_data, status
-    timestamp_float = float(time.time())
-    timestamp_readable = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp_float))
+    global log_data, status, timestamp, timefloat
     log_entry = {
-        "timestamp": timestamp_readable,
-        "timefloat": timestamp_float,
+        "timestamp": timestamp,
+        "timefloat": timefloat,
         "name": name,
         "action": action,
         "parents_phone": parents_phone,
@@ -202,8 +212,8 @@ def log_event(name, action, parents_phone, email):
     elif action == "Exit":
         inside[name] = False
       
-    print(f"{name} - {action} - {timestamp_readable}")
-    status=f"Logged - {name} - {action}"
+    print(f"{name} - {action} - {timestamp}")
+    change_status(f"Logged - {name} - {action}")
 
 def recognize_face(frame, action):
     global last_door_sensor_time
@@ -249,7 +259,7 @@ def recognize_face(frame, action):
             log_event(name, action, "...", "...")
 
 def get_camera_feed():
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, start_time
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, start_time, status_change_time, status, status_duration
 
     waiting_time = 10  # 10 seconds waiting time
 
@@ -266,6 +276,10 @@ def get_camera_feed():
 
     start_time = datetime.datetime.now()
     while True:
+        # If the status has changed and the duration has passed, revert it to the default.
+        if status != "Waiting for Enter/Exit" and time.time() - status_change_time >= status_duration:
+            status = "Waiting for Enter/Exit"
+
         ret, frame = cap.read()
         global_frame = frame
         display_time_and_status(frame)
