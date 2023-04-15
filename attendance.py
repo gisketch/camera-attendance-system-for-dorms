@@ -53,26 +53,20 @@ GPIO.setup(button2_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(door_sensor_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def button1_callback(channel):
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame
     print("Button 1 pressed (Enter)")
     enter_key_pressed = True
     if last_door_sensor_triggered:
-        cap = cv2.VideoCapture(0)
-        ret, frame = cap.read()
-        cap.release()
-        recognize_face(frame, "Enter")
+        recognize_face(global_frame, "Enter")
         last_door_sensor_triggered = False
         intruder_timer = None  # Reset the intruder timer
 
 def button2_callback(channel):
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame
     print("Button 2 pressed (Exit)")
     if not last_door_sensor_triggered:
         waiting_for_exit = True
-        cap = cv2.VideoCapture(0)
-        ret, frame = cap.read()
-        cap.release()
-        recognize_face(frame, "Exit")
+        recognize_face(global_frame, "Exit")
         last_door_sensor_triggered = False
 
 def door_sensor_callback(channel):
@@ -109,6 +103,7 @@ def display_time_and_status(frame):
 known_faces = []
 known_face_encodings = []
 known_face_names = []
+global_frame = None
 
 inside = {}
 log_data = []
@@ -245,7 +240,7 @@ def recognize_face(frame, action):
             log_event(name, action, "...", "...")
 
 def get_camera_feed():
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame
 
     waiting_time = 10  # 10 seconds waiting time
 
@@ -262,7 +257,7 @@ def get_camera_feed():
 
     while True:
         ret, frame = cap.read()
-
+        global_frame = frame
         display_time_and_status(frame)
 
         # Resize the camera feed to maintain aspect ratio and center it on the window
