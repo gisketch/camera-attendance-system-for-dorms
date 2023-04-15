@@ -54,11 +54,26 @@ GPIO.setup(door_sensor_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def button1_callback(channel):
     global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
-    print("Button 1 pressed")
-    
+    print("Button 1 pressed (Enter)")
+    enter_key_pressed = True
+    if last_door_sensor_triggered:
+        cap = cv2.VideoCapture(0)
+        ret, frame = cap.read()
+        cap.release()
+        recognize_face(frame, "Enter")
+        last_door_sensor_triggered = False
+        intruder_timer = None  # Reset the intruder timer
+
 def button2_callback(channel):
     global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
-    print("Button 2 pressed")
+    print("Button 2 pressed (Exit)")
+    if not last_door_sensor_triggered:
+        waiting_for_exit = True
+        cap = cv2.VideoCapture(0)
+        ret, frame = cap.read()
+        cap.release()
+        recognize_face(frame, "Exit")
+        last_door_sensor_triggered = False
 
 def door_sensor_callback(channel):
     if GPIO.input(door_sensor_pin):
@@ -74,6 +89,21 @@ GPIO.add_event_detect(button1_pin, GPIO.FALLING, callback=button1_callback, boun
 GPIO.add_event_detect(button2_pin, GPIO.FALLING, callback=button2_callback, bouncetime=300)
 
 
+status = "Ready"
+
+def putText(frame, text, position, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, color=(255, 255, 255), thickness=2):
+    cv2.putText(frame, text, position, font, scale, color, thickness, cv2.LINE_AA)
+
+def display_time_and_status(frame):
+    global status
+    # Display the current time at the top right
+    current_time = datetime.now().strftime('%m/%d/%Y %I:%M %p')
+    size = cv2.getTextSize(current_time, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
+    width = frame.shape[1]
+    putText(frame, current_time, (width - size[0] - 10, 30))
+
+    # Display the status at the bottom
+    putText(frame, status, (10, frame.shape[0] - 10))
 
 # Load known faces and their encodings
 known_faces = []
@@ -215,23 +245,51 @@ def recognize_face(frame, action):
             log_event(name, action, "...", "...")
 
 def get_camera_feed():
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
+
+    waiting_time = 10  # 10 seconds waiting time
+
     print("starting camera feed...")
     load_known_faces()
     cap = cv2.VideoCapture(0)
 
+    # Set the window to fullscreen
+    cv2.namedWindow('Camera Feed', cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty('Camera Feed', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
     while True:
         ret, frame = cap.read()
+
+        display_time_and_status(frame)
+
         cv2.imshow('Camera Feed', frame)
 
         key = cv2.waitKey(1)
         if key == ord("d"):
-          door_sensor_triggered()
+            door_sensor_triggered()
         if key == ord("e"):
-            recognize_face(frame, "Enter")
+            print("Enter key pressed")
+            enter_key_pressed = True
+            if last_door_sensor_triggered:
+                recognize_face(frame, "Enter")
+                last_door_sensor_triggered = False
+                intruder_timer = None  # Reset the intruder timer
         elif key == ord("x"):
-            recognize_face(frame, "Exit")
+            print("Exit key pressed")
+            if not last_door_sensor_triggered:
+                waiting_for_exit = True
+                recognize_face(frame, "Exit")
+                last_door_sensor_triggered = False
         elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
             break
+
+        # Check for possible intruder
+        if intruder_timer and time.time() - intruder_timer > waiting_time:
+            if not enter_key_pressed:
+                send_sms(landlord_number, "Possible Intruder Alert")
+                log_event("Possible intruder", "Alert", "...", "...")
+            intruder_timer = None  # Reset the intruder timer
+            last_door_sensor_triggered = False
 
     cap.release()
     cv2.destroyAllWindows()
