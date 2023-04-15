@@ -101,7 +101,7 @@ def putText(frame, text, position, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, col
 start_time = None
 
 def display_time_and_status(frame):
-    global status, start_time, timestamp, timefloat
+    global status, start_time, timestamp, timefloat, tenants_data, inside
     # Display the fast-forwarded time at the top right
     fast_forward_factor = 6  # 10 seconds equals 1 hour (60 minutes)
     current_time = datetime.datetime.now()
@@ -113,6 +113,17 @@ def display_time_and_status(frame):
     size = cv2.getTextSize(fast_forwarded_time_str, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
     width = frame.shape[1]
     putText(frame, fast_forwarded_time_str, (width - size[0] - 10, 30))
+
+    # Check if it's 10 PM or 4 AM
+    if fast_forwarded_time.hour in [22, 4]:
+        for tenant_name, is_inside in inside.items():
+            if not is_inside:
+                tenant_info = tenants_data.get(tenant_name)
+                if tenant_info:
+                    phone_number = tenant_info["parents_phone"]
+                    print(f"{tenant_name} - {phone_number}")
+                    print(f"Sending SMS to {phone_number}...")
+                    print(f"Message: {tenant_name} is not home yet!")
 
     # Display the status at the bottom
     putText(frame, status, (10, frame.shape[0] - 10))
@@ -155,9 +166,11 @@ def door_sensor_triggered():
     last_door_sensor_time = time.time()
     last_door_sensor_triggered = True
     if waiting_for_exit:
+        change_status("Door opened (a tenant left)")
         waiting_for_exit = False
     else:
         intruder_timer = time.time()
+        change_status("Door opened (waiting for Enter key)")
         enter_key_pressed = False
 
 def load_known_faces():
@@ -324,6 +337,12 @@ def get_camera_feed():
                 recognize_face(frame, "Exit")
                 last_door_sensor_triggered = False
         elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
+            
+            print("Cleaning up...")
+            GPIO.cleanup()
+            # Close the serial connection
+            ser.close()
+            cv2.destroyAllWindows()
             break
 
         # Check for possible intruder
@@ -336,78 +355,6 @@ def get_camera_feed():
 
     cap.release()
     cv2.destroyAllWindows()
-
-
-def get_image_feed(directory="testing", display_time=2, fixed_resolution=(640, 480)):
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed
-
-    waiting_time = 10  # 10 seconds waiting time
-
-    print("starting camera feed...")
-    load_known_faces()
-
-    image_files = [file for file in os.listdir(directory) if file.endswith((".jpg", ".png", ".jpeg"))]
-
-    while True:
-        for image_file in image_files:
-            file_path = os.path.join(directory, image_file)
-            image = cv2.imread(file_path)
-
-            # Resize the image while maintaining aspect ratio
-            height, width = image.shape[:2]
-            aspect_ratio = float(width) / float(height)
-            new_width = fixed_resolution[0]
-            new_height = int(new_width / aspect_ratio)
-
-            if new_height > fixed_resolution[1]:
-                new_height = fixed_resolution[1]
-                new_width = int(new_height * aspect_ratio)
-
-            resized_image = cv2.resize(image, (new_width, new_height), interpolation=cv2.INTER_AREA)
-            
-            # Create a black frame with the fixed resolution
-            frame = np.zeros((fixed_resolution[1], fixed_resolution[0], 3), dtype=np.uint8)
-
-            # Place the resized image in the center of the frame
-            y_offset = (fixed_resolution[1] - new_height) // 2
-            x_offset = (fixed_resolution[0] - new_width) // 2
-            frame[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = resized_image
-
-            cv2.imshow('Image Feed', frame)
-
-            start_time = time.time()
-            while time.time() - start_time < display_time:
-                key = cv2.waitKey(1)
-                if key == ord("d"):
-                    door_sensor_triggered()
-                if key == ord("e"):
-                    print("Enter key pressed")
-                    enter_key_pressed = True
-                    if last_door_sensor_triggered:
-                        recognize_face(frame, "Enter")
-                        last_door_sensor_triggered = False
-                        intruder_timer = None  # Reset the intruder timer
-                elif key == ord("x"):
-                    print("Exit key pressed")
-                    if not last_door_sensor_triggered:
-                        waiting_for_exit = True
-                        recognize_face(frame, "Exit")
-                        last_door_sensor_triggered = False
-                elif key & 0xFF == ord('q'):  # Press 'q' to quit the application
-                    print("Cleaning up...")
-                    GPIO.cleanup()
-                    # Close the serial connection
-                    ser.close()
-                    cv2.destroyAllWindows()
-                    return
-
-                # Check for possible intruder
-                if intruder_timer and time.time() - intruder_timer > waiting_time:
-                    if not enter_key_pressed:
-                        send_sms(landlord_number, "Possible Intruder Alert")
-                        log_event("Possible intruder", "Alert", "...", "...")
-                    intruder_timer = None  # Reset the intruder timer
-                    last_door_sensor_triggered = False
 
 
 if __name__ == "__main__":
