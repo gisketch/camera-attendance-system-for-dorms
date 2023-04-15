@@ -123,6 +123,7 @@ def display_time_and_status(frame):
                     phone_number = tenant_info["parents_phone"]
                     print(f"{tenant_name} - {phone_number}")
                     print(f"Sending SMS to {phone_number}...")
+                    send_sms(phone_number, f"{tenant_name} is not home yet!")
                     print(f"Message: {tenant_name} is not home yet!")
 
     # Display the status at the bottom
