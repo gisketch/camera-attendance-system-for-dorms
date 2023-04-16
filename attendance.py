@@ -77,6 +77,7 @@ def button2_callback(channel):
 door_has_opened = False
 
 def door_sensor_callback(channel):
+    global door_has_opened
     if GPIO.input(door_sensor_pin):
         door_has_opened = True
         print("Door opened")
