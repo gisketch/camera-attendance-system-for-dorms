@@ -19,6 +19,7 @@ ser = serial.Serial(
 
 landlord_number = "09309118777"
 waiting_time = 10  #Time to wait before alerting intruder
+fast_forward_factor = 12  # 5 seconds equals 1 hour (60 minutes)
 
 # Function to send a command to the SIM800L module
 def send_command(cmd, wait_time=1):
@@ -73,12 +74,17 @@ def button2_callback(channel):
         recognize_face(global_frame, "Exit")
         last_door_sensor_triggered = False
 
+door_has_opened = False
+
 def door_sensor_callback(channel):
     if GPIO.input(door_sensor_pin):
+        door_has_opened = True
         print("Door opened")
     else:
         print("Door closed")
-        door_sensor_triggered()
+        if(door_has_opened):
+            door_has_opened = False
+            door_sensor_triggered()
 
 # Set up the interrupt-driven callback for the door sensor
 GPIO.add_event_detect(door_sensor_pin, GPIO.BOTH, callback=door_sensor_callback, bouncetime=300)
@@ -103,12 +109,11 @@ def putText(frame, text, position, font=cv2.FONT_HERSHEY_SIMPLEX, scale=0.7, col
 start_time = None
 
 def display_time_and_status(frame):
-    global status, start_time, timestamp, timefloat, tenants_data, inside
+    global status, start_time, timestamp, timefloat, tenants_data, inside, fast_forward_factor
     # Add a global variable to track if the SMS messages have been sent
     global sms_sent_flag
 
     # Display the fast-forwarded time at the top right
-    fast_forward_factor = 12  # 5 seconds equals 1 hour (60 minutes)
     current_time = datetime.datetime.now()
     time_elapsed = (datetime.datetime.now() - start_time).total_seconds()
     fast_forwarded_time = current_time + datetime.timedelta(minutes=time_elapsed * fast_forward_factor)
