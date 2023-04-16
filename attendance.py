@@ -19,7 +19,7 @@ ser = serial.Serial(
 
 landlord_number = "09309118777"
 waiting_time = 10  #Time to wait before alerting intruder
-fast_forward_factor = 12  # 5 seconds equals 1 hour (60 minutes)
+fast_forward_factor = 6  # 5 seconds equals 1 hour (60 minutes)
 
 # Function to send a command to the SIM800L module
 def send_command(cmd, wait_time=1):
