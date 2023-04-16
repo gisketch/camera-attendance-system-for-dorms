@@ -17,6 +17,9 @@ ser = serial.Serial(
     timeout=1
 )
 
+landlord_number = "09309118777"
+waiting_time = 10  #Time to wait before alerting intruder
+
 # Function to send a command to the SIM800L module
 def send_command(cmd, wait_time=1):
     ser.write((cmd + '\r\n').encode())
@@ -24,7 +27,6 @@ def send_command(cmd, wait_time=1):
     response = ser.read_all().decode('utf-8', errors='ignore')
     print(response)
 
-landlord_number = "09309118777"
 
 def send_sms(phone_number, message):
     send_command("AT+CFUN=1")  # Set the SMS mode to text
@@ -120,7 +122,6 @@ def display_time_and_status(frame):
     # Check if it's 10 PM or 4 AM
     if fast_forwarded_time.hour in [22, 4]:
         if not sms_sent_flag:
-            print("TRUE:", fast_forwarded_time.hour)
             for tenant_name, is_inside in inside.items():
                 if not is_inside:
                     tenant_info = tenants_data.get(tenant_name)
@@ -128,8 +129,16 @@ def display_time_and_status(frame):
                         phone_number = tenant_info["parents_phone"]
                         print(f"{tenant_name} - {phone_number}")
                         print(f"Sending SMS to {phone_number}...")
-                        send_sms(phone_number, f"{tenant_name} is not home yet!")
-                        print(f"Message: {tenant_name} is not home yet!")
+                        send_sms(phone_number, f"{tenant_name} is not at the dormitory yet!")
+                        print(f"Message: {tenant_name} is at the dormitory yet!")
+                else:
+                    tenant_info = tenants_data.get(tenant_name)
+                    if tenant_info:
+                        phone_number = tenant_info["parents_phone"]
+                        print(f"{tenant_name} - {phone_number}")
+                        print(f"Sending SMS to {phone_number}...")
+                        send_sms(phone_number, f"{tenant_name} is inside the dormitory.")
+                        print(f"Message: {tenant_name} is inside the dormitory.")
             # Set the flag to True after sending the SMS messages
             sms_sent_flag = True
     else:
@@ -289,16 +298,16 @@ def recognize_face(frame, action):
             log_event(name, action, "...", "...")
 
 def get_camera_feed():
-    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, start_time, status_change_time, status, status_duration, timestamp
+    global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, start_time, status_change_time, status, status_duration, timestamp, waiting_time
 
-    waiting_time = 10  # 10 seconds waiting time
+    # 10 seconds waiting time
 
     print("starting camera feed...")
     load_known_faces()
     cap = cv2.VideoCapture(0)
 
     # Set the window resolution
-    window_width, window_height = 1280, 720
+    window_width, window_height = 1024, 600
 
     # Set the window to normal and resize it
     cv2.namedWindow('Camera Feed', cv2.WINDOW_NORMAL)
@@ -372,6 +381,7 @@ def get_camera_feed():
     cap.release()
     cv2.destroyAllWindows()
 
+sms_sent_flag = False
 
 if __name__ == "__main__":
     # get_image_feed()
