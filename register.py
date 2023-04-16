@@ -60,7 +60,7 @@ def main():
 
     capture_tenant_image(first_name, last_name)
     save_tenant_data(first_name, last_name, email, parents_phone)
-    print("Tenant data saved successfully.")
+    input("Tenant data saved successfully. Press any key to continue...")
 
 if __name__ == "__main__":
     main()
