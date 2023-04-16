@@ -42,7 +42,11 @@ def save_tenant_data(first_name, last_name, email, parents_phone):
     json_filename = "tenants_data.json"
     if os.path.exists(json_filename):
         with open(json_filename, 'r') as file:
-            tenants_data = json.load(file)
+            file_contents = file.read()
+            if file_contents:
+                tenants_data = json.loads(file_contents)
+            else:
+                tenants_data = {}
     else:
         tenants_data = {}
 
@@ -58,8 +62,8 @@ def main():
     email = input("Enter tenant's email: ")
     parents_phone = input("Enter tenant's parents' phone number: ")
 
-    capture_tenant_image(first_name, last_name)
     save_tenant_data(first_name, last_name, email, parents_phone)
+    capture_tenant_image(first_name, last_name)
     input("Tenant data saved successfully. Press any key to continue...")
 
 if __name__ == "__main__":

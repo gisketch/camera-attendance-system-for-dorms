@@ -244,7 +244,13 @@ def log_event(name, action, parents_phone, email):
 
     if os.path.exists(log_file):
         with open(log_file, 'r') as file:
-            log_data = json.load(file)
+            file_contents = file.read()
+            if file_contents:
+                log_data = json.loads(file_contents)
+            else:
+                log_data = []
+    else:
+        log_data = []
 
     log_data.append(log_entry)
 
