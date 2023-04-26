@@ -315,6 +315,7 @@ def recognize_face(frame, action):
     face_locations = face_recognition.face_locations(rgb_frame)
 
     print("Recognizing...")
+    change_status("Recognizing face... wait a moment")
 
     if len(face_locations) == 0:
         print("No face detected. Canceling the process.")
