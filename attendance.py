@@ -358,7 +358,8 @@ def recognize_face(frame, action):
         # Save the image with bounding box and name
         top, right, bottom, left = face_location
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-        cv2.putText(frame, f"{name} {similarity_percentage:.2f}%", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+        cv2.putText(frame, f"{name} {float(similarity_percentage):.2f}%", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
 
         # Set the folder containing the test images
         test_image_folder = "images_test"
