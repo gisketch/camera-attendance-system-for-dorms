@@ -266,6 +266,49 @@ def log_event(name, action, parents_phone, email):
     print(f"{name} - {action} - {timestamp}")
     change_status(f"Logged - {name} - {action}")
 
+# def recognize_face(frame, action):
+#     global last_door_sensor_time
+#     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+#     face_locations = face_recognition.face_locations(rgb_frame)
+
+#     print("Recognizing...")
+
+#     if len(face_locations) == 0:
+#         print("No face detected. Canceling the process.")
+#         return
+    
+#     elif len(face_locations) > 1:
+#         print("Multiple faces detected. Try again.")
+#         return
+
+#     face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+#     for face_encoding, face_location in zip(face_encodings, face_locations):
+#         matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+#         name = "Unknown"
+
+#         if True in matches:
+#             first_match_index = matches.index(True)
+#             name = known_face_names[first_match_index]
+
+#         print(name)
+
+#         if name in inside:
+#             if inside[name] and action == "Enter":
+#                 print(f"{name} is already inside. Ignoring entry event.")
+#                 return
+#             elif not inside[name] and action == "Exit":
+#                 print(f"{name} is already outside. Ignoring exit event.")
+#                 return
+
+#         tenant_data = tenants_data.get(name)
+#         if tenant_data:
+#             parents_phone = tenant_data["parents_phone"]
+#             email = tenant_data["email"]
+#             log_event(name, action, parents_phone, email)
+#         else:
+#             log_event(name, action, "...", "...")
+
 def recognize_face(frame, action):
     global last_door_sensor_time
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -276,7 +319,7 @@ def recognize_face(frame, action):
     if len(face_locations) == 0:
         print("No face detected. Canceling the process.")
         return
-    
+
     elif len(face_locations) > 1:
         print("Multiple faces detected. Try again.")
         return
@@ -290,6 +333,9 @@ def recognize_face(frame, action):
         if True in matches:
             first_match_index = matches.index(True)
             name = known_face_names[first_match_index]
+            # Compute the similarity (1 - distance) as a percentage
+            face_distance = face_recognition.face_distance([known_face_encodings[first_match_index]], face_encoding)
+            similarity_percentage = (1 - face_distance) * 100
 
         print(name)
 
@@ -308,6 +354,23 @@ def recognize_face(frame, action):
             log_event(name, action, parents_phone, email)
         else:
             log_event(name, action, "...", "...")
+
+        # Save the image with bounding box and name
+        top, right, bottom, left = face_location
+        cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+        cv2.putText(frame, f"{name} {similarity_percentage:.2f}%", (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+        # Set the folder containing the test images
+        test_image_folder = "images_test"
+        if not os.path.exists(test_image_folder):
+            os.makedirs(test_image_folder)
+
+        # Save the image with the bounding box and name
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        test_image_path = os.path.join(test_image_folder, f"{name}_{timestamp}.jpg")
+        cv2.imwrite(test_image_path, frame)
+
+        print(f"Image saved to {test_image_path}")
 
 def get_camera_feed():
     global last_door_sensor_triggered, waiting_for_exit, intruder_timer, enter_key_pressed, global_frame, start_time, status_change_time, status, status_duration, timestamp, waiting_time

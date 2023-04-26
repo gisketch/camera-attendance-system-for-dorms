@@ -2,12 +2,12 @@ import os
 import shutil
 
 # Empty the contents of log.json and tenants_data.json
-def clear_file(file_path):
+def clear_file(file_path, to_write):
     with open(file_path, "w") as file:
-        file.write("")
+        file.write(to_write)
 
-clear_file("./log.json")
-clear_file("./tenants_data.json")
+clear_file("./log.json", "[]")
+clear_file("./tenants_data.json", "{}")
 
 # Move all files in tenants to tenants_backup
 def move_files(src_dir, dest_dir):
