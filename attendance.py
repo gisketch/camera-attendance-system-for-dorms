@@ -17,9 +17,9 @@ ser = serial.Serial(
     timeout=1
 )
 
-landlord_number = "09309118777"
+landlord_number = "09300289941"
 waiting_time = 10  #Time to wait before alerting intruder
-fast_forward_factor = 6  # 5 seconds equals 1 hour (60 minutes)
+fast_forward_factor = 2  # 5 seconds equals 1 hour (60 minutes)
 
 # Function to send a command to the SIM800L module
 def send_command(cmd, wait_time=1):
@@ -88,10 +88,10 @@ def door_sensor_callback(channel):
             door_sensor_triggered()
 
 # Set up the interrupt-driven callback for the door sensor
-GPIO.add_event_detect(door_sensor_pin, GPIO.BOTH, callback=door_sensor_callback, bouncetime=300)
+GPIO.add_event_detect(door_sensor_pin, GPIO.BOTH, callback=door_sensor_callback, bouncetime=1000)
 # Set up the interrupt-driven callbacks for the buttons
-GPIO.add_event_detect(button1_pin, GPIO.FALLING, callback=button1_callback, bouncetime=300)
-GPIO.add_event_detect(button2_pin, GPIO.FALLING, callback=button2_callback, bouncetime=300)
+GPIO.add_event_detect(button1_pin, GPIO.FALLING, callback=button1_callback, bouncetime=1000)
+GPIO.add_event_detect(button2_pin, GPIO.FALLING, callback=button2_callback, bouncetime=1000)
 
 default_status = "Waiting for Enter/Exit"
 
